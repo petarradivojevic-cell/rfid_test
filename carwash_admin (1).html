@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CarWash Admin</title>
+
+<!-- Safari / iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CarWash">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230a0a0f'/%3E%3Ctext x='90' y='115' font-size='90' text-anchor='middle' fill='%234fd1c5'%3E&#x1F697;%3C/text%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0a0f;
+    --surface:  #13131a;
+    --card:     #1a1a24;
+    --border:   #2a2a38;
+    --accent:   #4fd1c5;
+    --accent2:  #f6ad55;
+    --danger:   #fc8181;
+    --success:  #68d391;
+    --text:     #e2e8f0;
+    --muted:    #718096;
+    --mono:     'Space Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--muted); }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    transition: background 0.3s;
+    box-shadow: 0 0 0 3px rgba(252,129,129,0.2);
+  }
+  .status-dot.online {
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(104,211,145,0.2);
+  }
+
+  /* ---- LOGIN SCREEN ---- */
+  #loginScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 57px);
+    padding: 24px;
+    gap: 12px;
+  }
+
+  .login-title {
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .login-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  /* ---- INPUTS ---- */
+  input, select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+    max-width: 380px;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    width: 100%;
+    max-width: 380px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+  }
+  .btn-danger {
+    background: var(--danger);
+    color: #0a0a0f;
+  }
+  .btn-warning {
+    background: var(--accent2);
+    color: #0a0a0f;
+  }
+  .btn-ghost {
+    background: var(--border);
+    color: var(--text);
+  }
+  .btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    width: auto;
+    max-width: none;
+  }
+
+  /* ---- MAIN ---- */
+  #mainScreen { display: none; padding: 0 0 100px; }
+
+  /* ---- TABS ---- */
+  .tabs {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 8px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: var(--sans);
+    transition: color 0.2s;
+  }
+  .tab.active { color: var(--accent); }
+  .tab svg { width: 22px; height: 22px; }
+
+  /* ---- SECTIONS ---- */
+  .section { display: none; padding: 16px; }
+  .section.active { display: block; }
+
+  /* ---- SECTION HEADER ---- */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---- CARD ---- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+    border-radius: 3px 0 0 3px;
+  }
+  .card.blocked::before { background: var(--danger); }
+  .card.zero::before { background: var(--accent2); }
+
+  .card-uid {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .card-owner {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-balance {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .card-balance.low { color: var(--accent2); }
+  .card-balance.zero { color: var(--danger); }
+
+  .badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .badge-ok   { background: rgba(104,211,145,0.15); color: var(--success); }
+  .badge-blocked { background: rgba(252,129,129,0.15); color: var(--danger); }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---- STATS ROW ---- */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+  }
+
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    display: block;
+  }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: flex-end;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .modal-uid {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 20px;
+  }
+
+  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ---- SEARCH ---- */
+  .search-wrap { position: relative; margin-bottom: 16px; }
+  .search-wrap input { padding-left: 42px; max-width: 100%; }
+  .search-icon {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  /* ---- EMPTY STATE ---- */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* ---- TOAST ---- */
+  #toast {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 300;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  #toast.success { border-color: var(--success); color: var(--success); }
+  #toast.error   { border-color: var(--danger);  color: var(--danger); }
+
+  /* ---- SPINNER ---- */
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 40px auto;
+    display: block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- TOPUP AMOUNT BUTTONS ---- */
+  .amount-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .amount-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .amount-btn:active, .amount-btn.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(79,209,197,0.08);
+  }
+
+  .input-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  .current-balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .current-balance-row span:first-child { color: var(--muted); font-size: 13px; }
+  .current-balance-row span:last-child  { font-family: var(--mono); color: var(--accent); font-weight: 700; }
+
+
+  /* ---- INSTALL BANNER ---- */
+  #installBanner {
+    background: linear-gradient(135deg, rgba(79,209,197,0.12), rgba(79,209,197,0.04));
+    border: 1px solid rgba(79,209,197,0.3);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    max-width: 380px;
+    width: 100%;
+    display: none;
+  }
+  #installBanner.visible { display: block; }
+  .install-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+  .install-steps {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 12px;
+  }
+  .install-steps b { color: var(--text); }
+  .btn-newtab {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-family: var(--sans);
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+  }
+  .btn-newtab:active { background: rgba(79,209,197,0.1); }
+
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header>
+  <div class="logo">CAR<span>/</span>WASH <span>//</span> ADMIN</div>
+  <div class="status-dot" id="statusDot"></div>
+</header>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  
+  <!-- Install / open-in-new-tab banner -->
+  <div id="installBanner">
+    <div class="install-title">// DODAJ NA POCETNI EKRAN</div>
+    <div class="install-steps">
+      <b>1.</b> Tap the Share button <b>&#x2197;</b> in Safari<br>
+      <b>2.</b> Scroll down and tap <b>"Add to Home Screen"</b><br>
+      <b>3.</b> Tap <b>"Add"</b> — app icon appears on your home screen
+    </div>
+    <button class="btn-newtab" onclick="openNewTab()">&#x2197; Otvori u novom tabu</button>
+  </div>
+
+  <div class="login-title">// ADMIN PANEL</div>
+  <div class="login-sub">Unesite admin lozinku za pristup</div>
+  <input type="password" id="pinInput" placeholder="Lozinka" maxlength="32"
+         onkeydown="if(event.key==='Enter') doLogin()">
+  <button class="btn btn-primary" onclick="doLogin()">PRIJAVA</button>
+  <div id="loginError" style="color:var(--danger);font-size:13px;display:none;">Pogresna lozinka</div>
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="mainScreen">
+
+  <!-- Cards section -->
+  <div class="section active" id="secCards">
+    <div class="stats-row" id="statsRow">
+      <div class="stat-box"><span class="stat-val" id="statTotal">-</span><span class="stat-lbl">Kartica</span></div>
+      <div class="stat-box"><span class="stat-val" id="statActive">-</span><span class="stat-lbl">Aktivnih</span></div>
+      <div class="stat-box"><span class="stat-val" id="statBlocked">-</span><span class="stat-lbl">Blokiranih</span></div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Sve kartice</span>
+      <button class="btn btn-primary btn-sm" onclick="loadCards()">↻ Osvježi</button>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Pretraga po imenu ili UID..." oninput="filterCards()">
+    </div>
+
+    <div id="cardsList"></div>
+  </div>
+
+  <!-- Settings section -->
+  <div class="section" id="secSettings">
+    <div class="section-title" style="margin-bottom:16px">Podesavanja</div>
+    <div class="card">
+      <div class="card-uid">FIREBASE CONFIG</div>
+      <div class="card-owner" style="font-size:14px;margin-bottom:12px">Baza podataka</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">
+        Panel se konektuje direktno na vas Firebase.<br>
+        Lozinka za pristup: promijenite u kodu ispod.
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:8px">
+      <div class="card-uid">SESSION</div>
+      <div class="card-owner" style="font-size:14px;margin-bottom:12px">Prijavljeni ste</div>
+      <button class="btn btn-danger" onclick="doLogout()">ODJAVA</button>
+    </div>
+  </div>
+
+  <!-- Bottom tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('secCards', this)">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+      Kartice
+    </button>
+    <button class="tab" onclick="showTab('secSettings', this)">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Opcije
+    </button>
+  </div>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-title" id="modalTitle">Kartica</div>
+    <div class="modal-uid" id="modalUid"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  CONFIG  –  change these to match your Firebase + set password
+// ============================================================
+const FB_API_KEY     = "AIzaSyBVvVFk4vLrKwXD6mFRLlQd7GwHha2EgCQ";
+const FB_PROJECT_ID  = "perionica-rfid-9c6ec";
+const FB_DB_URL      = "https://perionica-rfid-9c6ec-default-rtdb.europe-west1.firebasedatabase.app";
+const FB_EMAIL       = "petar.radivojevic996@gmail.com";
+const FB_PASSWORD    = "Miona1234";
+const ADMIN_PIN      = "1234";   // ← CHANGE THIS to your admin password
+// ============================================================
+
+let idToken   = null;
+let allCards  = {};
+
+// ---- LOGIN ----
+function doLogin() {
+  const pin = document.getElementById('pinInput').value;
+  if (pin !== ADMIN_PIN) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginError').style.display = 'none';
+  firebaseSignIn();
+}
+
+function doLogout() {
+  idToken = null;
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('statusDot').classList.remove('online');
+}
+
+// ---- FIREBASE AUTH ----
+async function firebaseSignIn() {
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: FB_EMAIL, password: FB_PASSWORD, returnSecureToken: true })
+      }
+    );
+    const data = await res.json();
+    if (data.idToken) {
+      idToken = data.idToken;
+      document.getElementById('statusDot').classList.add('online');
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen').style.display = 'block';
+      loadCards();
+    } else {
+      showToast('Firebase greska: ' + (data.error?.message || 'Nepoznato'), 'error');
+    }
+  } catch(e) {
+    showToast('Nema interneta', 'error');
+  }
+}
+
+// ---- FIREBASE REST ----
+async function fbGet(path) {
+  const res = await fetch(`${FB_DB_URL}${path}.json?auth=${idToken}`);
+  return res.json();
+}
+
+async function fbSet(path, value) {
+  const res = await fetch(`${FB_DB_URL}${path}.json?auth=${idToken}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value)
+  });
+  return res.json();
+}
+
+// ---- LOAD CARDS ----
+async function loadCards() {
+  const list = document.getElementById('cardsList');
+  list.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const data = await fbGet('/Card');
+    allCards = data || {};
+    renderCards(allCards);
+  } catch(e) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>Greska pri ucitavanju</div>';
+  }
+}
+
+function renderCards(cards) {
+  const list = document.getElementById('cardsList');
+  const keys = Object.keys(cards);
+
+  // Stats
+  let blocked = 0;
+  keys.forEach(k => { if (!cards[k].active) blocked++; });
+  document.getElementById('statTotal').textContent   = keys.length;
+  document.getElementById('statActive').textContent  = keys.length - blocked;
+  document.getElementById('statBlocked').textContent = blocked;
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">💳</div>Nema kartica u bazi</div>';
+    return;
+  }
+
+  // Sort: blocked last, then by balance desc
+  keys.sort((a, b) => {
+    if (cards[a].active !== cards[b].active) return cards[a].active ? -1 : 1;
+    return (cards[b].stanje || 0) - (cards[a].stanje || 0);
+  });
+
+  list.innerHTML = keys.map(uid => {
+    const c = cards[uid];
+    const bal = c.stanje || 0;
+    const owner = c.owner && c.owner !== 'Nepoznat' ? c.owner : 'Nepoznat';
+    const blocked = !c.active;
+    const balClass = bal === 0 ? 'zero' : bal < 100 ? 'low' : '';
+    const cardClass = blocked ? 'blocked' : bal === 0 ? 'zero' : '';
+
+    return `
+    <div class="card ${cardClass}" onclick="openCard('${uid}')">
+      <div class="card-uid">${uid}</div>
+      <div class="card-owner">${owner}</div>
+      <div class="card-row">
+        <div class="card-balance ${balClass}">${bal} <span style="font-size:12px;font-weight:400;color:var(--muted)">din</span></div>
+        <span class="badge ${blocked ? 'badge-blocked' : 'badge-ok'}">${blocked ? 'BLOKIRANA' : 'AKTIVNA'}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px">Pranja: ${c.broj_pranja || 0}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---- SEARCH ----
+function filterCards() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  if (!q) { renderCards(allCards); return; }
+
+  const filtered = {};
+  Object.keys(allCards).forEach(uid => {
+    const c = allCards[uid];
+    const owner = (c.owner || '').toLowerCase();
+    if (uid.toLowerCase().includes(q) || owner.includes(q))
+      filtered[uid] = c;
+  });
+  renderCards(filtered);
+}
+
+// ---- MODAL ----
+let activeUID = null;
+
+function openCard(uid) {
+  activeUID = uid;
+  const c = allCards[uid];
+  const owner = c.owner || 'Nepoznat';
+
+  document.getElementById('modalTitle').textContent = owner;
+  document.getElementById('modalUid').textContent   = uid;
+
+  const actions = document.getElementById('modalActions');
+  actions.innerHTML = `
+    <div class="current-balance-row">
+      <span>Trenutno stanje</span>
+      <span>${c.stanje || 0} din</span>
+    </div>
+
+    <span class="input-label">BRZO DOPUNJAVANJE</span>
+    <div class="amount-grid">
+      ${[100,200,300,500,1000,2000].map(a =>
+        `<div class="amount-btn" onclick="selectAmount(${a},this)">${a}</div>`
+      ).join('')}
+    </div>
+
+    <span class="input-label">ILI UNESITE IZNOS (din)</span>
+    <input type="number" id="topupAmount" placeholder="Npr. 450" min="0" step="50"
+           style="max-width:100%;margin-bottom:12px">
+
+    <button class="btn btn-primary" onclick="doTopup()">+ DOPUNI</button>
+    <div class="divider"></div>
+    <button class="btn ${c.active ? 'btn-danger' : 'btn-warning'}" onclick="toggleBlock()">
+      ${c.active ? '⛔ BLOKIRAJ KARTICU' : '✓ ODBLOKIRAJ KARTICU'}
+    </button>
+    <button class="btn btn-ghost" onclick="closeModal()">Odustani</button>
+  `;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function selectAmount(val, el) {
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('topupAmount').value = val;
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay'))
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+
+// ---- TOP UP ----
+async function doTopup() {
+  const amount = parseInt(document.getElementById('topupAmount').value);
+  if (!amount || amount <= 0) { showToast('Unesite ispravan iznos', 'error'); return; }
+
+  const current = allCards[activeUID].stanje || 0;
+  const newBal  = current + amount;
+
+  try {
+    await fbSet(`/Card/${activeUID}/stanje`, newBal);
+    allCards[activeUID].stanje = newBal;
+    showToast(`+${amount} din → novo stanje: ${newBal} din`, 'success');
+    closeModal();
+    renderCards(allCards);
+  } catch(e) {
+    showToast('Greska pri dopunjavanju', 'error');
+  }
+}
+
+// ---- BLOCK / UNBLOCK ----
+async function toggleBlock() {
+  const current = allCards[activeUID].active;
+  const newVal  = !current;
+
+  try {
+    await fbSet(`/Card/${activeUID}/active`, newVal);
+    allCards[activeUID].active = newVal;
+    showToast(newVal ? 'Kartica odblokirana ✓' : 'Kartica blokirana ⛔', newVal ? 'success' : 'error');
+    closeModal();
+    renderCards(allCards);
+  } catch(e) {
+    showToast('Greska pri izmjeni', 'error');
+  }
+}
+
+// ---- TABS ----
+function showTab(secId, tabEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(secId).classList.add('active');
+  tabEl.classList.add('active');
+}
+
+// ---- TOAST ----
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 2800);
+}
+
+// ---- INSTALL BANNER + NEW TAB ----
+(function() {
+  // Show banner if NOT already running as standalone PWA
+  const isStandalone = window.navigator.standalone === true ||
+                       window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) {
+    document.getElementById('installBanner').classList.add('visible');
+  }
+})();
+
+function openNewTab() {
+  // Get full URL of this file (works for local files and hosted)
+  const url = window.location.href;
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+</script>
+</body>
+</html>
